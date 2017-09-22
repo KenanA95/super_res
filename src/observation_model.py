@@ -64,17 +64,17 @@ class ObservationModel:
 
     def transformation_matrix(self):
         """
-        Generate a homogeneous transformation matrix with random translation/rotation within the provided range
+            Generate a homogeneous transformation matrix with random translation/rotation within the provided range
 
-        Returns
-        -------
-        The transformation matrix in the form
+            Returns
+            -------
+            The transformation matrix in the form
 
-            [[cos(theta),     -sin(theta),  tx]
-            [ sin(theta),     cos(theta),   ty]
-            [0,               0,            1]]
+                [[cos(theta),     -sin(theta),  tx]
+                [ sin(theta),     cos(theta),   ty]
+                [0,               0,            1]]
 
-        Where tx, ty is the translation in pixels and theta is the rotation in radians
+            Where tx, ty is the translation in pixels and theta is the rotation in radians
         """
 
         theta = np.random.randint(self.rotation_range[0], self.rotation_range[1])
@@ -99,4 +99,15 @@ class LowResolution:
         self.transform_matrix = transform_matrix
         self.noise = noise
 
+
+def normalize(im, new_min, new_max):
+    """
+        Linear normalization to convert image to any range of values
+
+                        (new_max-new_min)
+        In = (I-Min) * ___________________ + new_min
+                           max - min
+
+    """
+    return (im-im.min()) * (new_max - new_min) / (im.max() - im.min()) + new_min
 
