@@ -3,7 +3,6 @@ import math
 from skimage import transform as tf
 from scipy.signal import convolve2d
 from skimage.measure import block_reduce
-from low_resolution import LowResolution
 
 
 class ObservationModel:
@@ -87,3 +86,17 @@ class ObservationModel:
             [math.sin(theta), math.cos(theta),  ty],
             [0, 0, 1]
         ])
+
+
+class LowResolution:
+    """
+        Store the low-resolution image and the information unique to it i.e the random transformation
+        matrix and random noise
+
+    """
+    def __init__(self, image, transform_matrix, noise):
+        self.image = image
+        self.transform_matrix = transform_matrix
+        self.noise = noise
+
+
