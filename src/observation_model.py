@@ -3,6 +3,7 @@ import math
 from skimage import transform as tf
 from scipy.signal import convolve2d
 from skimage.measure import block_reduce
+from random import randint
 
 
 class ObservationModel:
@@ -59,6 +60,7 @@ class ObservationModel:
             im += noise
 
             # Add to the data-set
+            im = normalize(im, new_min=0, new_max=1)
             lr = LowResolution(im, transform_mat, self.downsample)
             self.low_resolution.append(lr)
 
@@ -77,9 +79,11 @@ class ObservationModel:
             Where tx, ty is the translation in pixels and theta is the rotation in radians
         """
 
-        theta = np.random.randint(self.rotation_range[0], self.rotation_range[1])
+        theta = randint(self.rotation_range[0], self.rotation_range[1])
         theta = math.radians(theta)
-        tx, ty = np.random.randint(self.translation_range[0], self.translation_range[1], size=(1, 2))[0]
+
+        tx = randint(self.translation_range[0], self.translation_range[1])
+        ty = randint(self.translation_range[0], self.translation_range[1])
 
         return np.array([
             [math.cos(theta), -math.sin(theta), tx],
