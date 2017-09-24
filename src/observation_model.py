@@ -36,6 +36,7 @@ class ObservationModel:
         self.rotation_range = rotation_range
         self.noise_scale = noise_scale
         self.low_resolution = []
+        self.low_res_images = []
         self.generate_low_resolution(n)
 
     def generate_low_resolution(self, n):
@@ -61,6 +62,7 @@ class ObservationModel:
 
             # Add to the data-set
             im = normalize(im, new_min=0, new_max=1)
+            self.low_res_images.append(im)
             lr = LowResolution(im, transform_mat, self.downsample)
             self.low_resolution.append(lr)
 

@@ -27,11 +27,11 @@ class TestRegistration(unittest.TestCase):
         self.translations = []
 
         # Add motion to the lr frames and store the exact amount
-        for lr in camera.low_resolution:
+        for lr in camera.low_res_images:
 
             # There's no significant rotation in the actual data set only translation
             tx, ty = np.random.randint(-3, 3, size=(1, 2))[0]
-            im = fourier_shift(np.fft.fftn(lr.image), (ty, tx))
+            im = fourier_shift(np.fft.fftn(lr), (ty, tx))
             im = np.fft.ifftn(im).real
 
             self.low_resolution.append(im)
@@ -51,7 +51,8 @@ class TestRegistration(unittest.TestCase):
             tx, ty = self.translations[index]
 
             # Estimated offset based on the centroid calculation
-            cx, cy = np.subtract(calculate_centroid(lr), center)
+            cy, cx = calculate_centroid(lr)
+            cx, cy = np.subtract((cx, cy), center)
 
             # Make sure they are within a 1/2 pixel margin
             self.assertAlmostEqual(cx, tx, 0)
