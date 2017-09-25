@@ -39,6 +39,24 @@ def interpolation_restore(low_res, psf, downsample_factor, align_function=centro
     return high_res
 
 
+# Pad with zeros
+def upsample_image(im, n):
+    """
+         Upsample the image to n x the original size of each dimension,
+         with the new even rows and columns filled with zeros (0)
+
+    """
+    new_shape = np.multiply(im.shape, n)
+    upsampled_im = np.zeros(new_shape)
+    upsampled_im[0::n, 0::n] = im
+
+    return upsampled_im
+
+
+def irani_peleg_restore():
+    return
+
+
 def mse(x, y):
     return np.linalg.norm(x-y)
 
