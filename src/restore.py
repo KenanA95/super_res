@@ -7,8 +7,22 @@ from skimage.measure import compare_ssim as ssim, compare_psnr as psnr
 import matplotlib.pyplot as plt
 
 
-def interpolation_restore(low_res, psf, downsample_factor, align_function=centroid_align,):
+def interpolation_restore(low_res, psf, downsample_factor, align_function=centroid_align):
+    """
+        Rudin's forward-projection method
+        Reference: http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (Sect. 5.8)
 
+        Parameters
+        ----------
+        low_res : ndarray
+            The low-resolution input images
+        psf : ndarray
+            The estimated point spread function used for deconvolution
+        downsample_factor : integer
+            Magnification factor to recover
+        align_function : func
+            The function used to align the low-resolution frames
+    """
     # Align the stars according to their centroids
     low_res = align_function(low_res)
 
@@ -18,7 +32,7 @@ def interpolation_restore(low_res, psf, downsample_factor, align_function=centro
     # Up-sample through bicubic interpolation
     high_res = misc.imresize(average_image, downsample_factor*100, interp='bicubic')
 
-    # Deconvolve the PSF
+    # Deconvolve the PSF with standard single image method
     high_res = normalize(high_res, new_min=0, new_max=1)
     high_res = restoration.richardson_lucy(high_res, psf, iterations=15)
 
@@ -44,11 +58,11 @@ def compare(original, restored):
 
     label = 'MSE: {:.2f}, PSNR: {:.2F}, SSIM: {:.2f}'
 
-    ax[0].imshow(original, cmap=plt.cm.gray, vmin=0, vmax=1)
+    ax[0].imshow(original, cmap='gray', vmin=0, vmax=1)
     ax[0].set_xlabel(label.format(mse_original, psnr_original, ssim_original))
     ax[0].set_title('Original image')
 
-    ax[1].imshow(restored, cmap=plt.cm.gray, vmin=0, vmax=1)
+    ax[1].imshow(restored, cmap='gray', vmin=0, vmax=1)
     ax[1].set_xlabel(label.format(mse_restored, psnr_restored, ssim_restored))
     ax[1].set_title('Restored image')
 
