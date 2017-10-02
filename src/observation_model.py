@@ -117,3 +117,25 @@ def normalize(im, new_min, new_max):
     """
     return (im-im.min()) * (new_max - new_min) / (im.max() - im.min()) + new_min
 
+
+def generate_2d_gaussian(size, diameter):
+    """ Generate a 2d Gaussian to represent the PSF for testing purposes
+
+    Parameters
+    ----------
+    size: int
+        The size of the image i.e size=5 => 5x5 image
+    diameter: int
+        The diameter of the 2 dimensional gaussian in the center of the image
+
+    Returns
+    -------
+    An image with a 2d gaussian placed in the center
+    """
+
+    x = np.arange(0, size, 1, float)
+    y = x[:, np.newaxis]
+
+    x0 = y0 = (size - 1) // 2
+
+    return np.exp(-4 * np.log(2) * ((x - x0) ** 2 + (y - y0) ** 2) / diameter ** 2) * 1
