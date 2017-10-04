@@ -2,7 +2,8 @@ import numpy as np
 from scipy import ndimage
 from scipy.ndimage import fourier_shift
 from skimage.filters import threshold_otsu
-from matplotlib import pyplot as plt
+from skimage.feature import register_translation
+from observation_model import normalize
 
 
 def calculate_centroid(im):
@@ -23,5 +24,22 @@ def centroid_align(stars):
         star = fourier_shift(np.fft.fftn(star), shift)
         star = np.fft.ifftn(star).real
         aligned.append(star)
+
+    return aligned
+
+
+# Align using phase correlation according to first image in the set
+def cross_corr_align(lr_frames):
+    src = lr_frames[0]
+
+    aligned = []
+    for lr in lr_frames:
+        shift, error, diffphase = register_translation(src, lr, 100)
+        im = fourier_shift(np.fft.fftn(lr), shift)
+
+        im = np.fft.ifftn(im).real
+        im = normalize(im, new_min=0, new_max=1)
+
+        aligned.append(im)
 
     return aligned
