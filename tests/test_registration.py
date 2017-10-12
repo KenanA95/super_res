@@ -41,7 +41,7 @@ class TestRegistration(unittest.TestCase):
         self.low_resolution = None
         self.translations = None
 
-    def test_registration(self):
+    def test_centroid_registration(self):
         # Center of the image is the reference point
         lr = self.low_resolution[0]
         center = lr.shape[1] / 2, lr.shape[0] / 2
