@@ -21,44 +21,42 @@ def transform_coordinates(x, y, tf):
     return int(X), int(Y)
 
 
-def decimation_matrix(target_resolution, downsample_factor):
+def decimation_matrix(M, N, downsample_factor):
     """
         Matrix operator to subsample an image by a given factor
         Reference: http://users.wfu.edu/plemmons/papers/siam_maa3.pdf ( sect. A.1)
 
+        TODO: Fix to work on non-square images
         Parameters
         ----------
-        target_resolution : int
-            Size of the high-resolution image
+        M, N : int
+            Dimensions of the high-resolution image
         downsample_factor : int
             How much to decimate the image by
 
         Returns
         -------
-        D : (M**2, N**2) sparse array
+        D : (m**2, N**2) sparse array
             Sparse decimation matrix to down-sample an image through multiplication
-            Where M is the size of the LR frame and N is the size of the HR image
+            Where m is the size of the LR frame and N is the size of the HR image
 
     """
-    lr_size = int(target_resolution / downsample_factor)
+    m, n = int(M / downsample_factor), int(N / downsample_factor)
 
     # Get a grid the size of the lr frame to represent the indices
-    rows, cols = np.meshgrid(range(lr_size), range(lr_size))
+    rows, cols = np.meshgrid(range(m), range(n))
 
     # Change the sampling rate ex. (indices = 0, 1, 2..., factor = 2) => 0, 2, 4...
     sampled_rows = rows * downsample_factor
     sampled_cols = cols * downsample_factor
 
-    # Convert the indices to the decimation matrix
-    sparse_col_indices = np.ravel_multi_index((sampled_rows, sampled_cols),
-                                              dims=(target_resolution, target_resolution)).T
+    # Convert the indices to be placed into the decimation matrix
+    sparse_col_indices = np.ravel_multi_index((sampled_rows, sampled_cols), dims=(M, N)).T
+    sparse_row_indices = np.ravel_multi_index((rows, cols), dims=(m, n)).T
 
-    sparse_row_indices = np.ravel_multi_index((rows, cols), dims=(lr_size, lr_size)).T
+    data = np.ones(len(sparse_row_indices) * m)
 
-    data = np.ones(len(sparse_row_indices) * lr_size)
-    shape = (lr_size ** 2, target_resolution ** 2)
-
-    return sparse.coo_matrix((data, (sparse_row_indices.flat, sparse_col_indices.flat)), shape)
+    return sparse.coo_matrix((data, (sparse_row_indices.flat, sparse_col_indices.flat)), shape=(m**2, N**2))
 
 
 def out_of_bounds(mm, nn, M, N):
