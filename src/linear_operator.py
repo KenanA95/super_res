@@ -2,6 +2,20 @@ import numpy as np
 import scipy.sparse as sparse
 
 
+def construct_operator(images, M, N, downsample_factor, psf):
+
+    operators = []
+
+    for index in range(len(images)):
+        dec_mat = decimation_matrix(M, N, downsample_factor)
+        blur_mat = blur_matrix(M, N, psf)
+        op = dec_mat * blur_mat
+
+        operators.append(op)
+
+    return sparse.vstack(operators, format='csr')
+
+
 def transform_coordinates(x, y, tf):
     """
         tf =
@@ -66,10 +80,10 @@ def out_of_bounds(mm, nn, M, N):
 # TODO: Rewrite
 def blur_matrix(M, N, psf):
     """
-        Sparse block Toeplitz matrix to represent convolution through matrix multiplication
+        Sparse block Toeplitz matrix (BTTB) to represent convolution through matrix multiplication
         Assumes zero boundary conditions and a spatially-invariant psf
-        Reference: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.2)
-
+        References: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.2)
+                    https://pdfs.semanticscholar.org/4c6c/d428cbcd75d257ef8de156cfbfd975bb7cfa.pdf
         Parameters
         ----------
         M, N : int
