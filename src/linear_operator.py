@@ -1,16 +1,46 @@
 import numpy as np
 import scipy.sparse as sparse
 
+__doc__ = """
 
-def construct_operator(images, M, N, downsample_factor, psf):
+Construct an operator to solve Ax=b where
+     A is the sparse operator representing Decimation + Blur
+     x is the high-resolution target
+     b is a stacked vector of all the low-resolution images
 
+Note:
+Motion operator is not implemented because the low-resolution images are pre-aligned
+For more information on how to implement this matrix
+       http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (sect. 5.4.4)
+"""
+
+
+def construct_operator(im_count, M, N, downsample_factor, psf):
+    """
+        Linear operator to represent the image observation model
+
+        Parameters
+        ----------
+        im_count: int
+            Number of images
+        M, N: int
+            Dimensions of the high-resolution image
+        downsample_factor: int
+            How much to decimate the images by
+        psf: ndarray
+            Matrix representation of the point spread function
+        Returns
+        -------
+        operator: ndarray with dimensions (im_count * m*n, M*N) where m,n are the dimensions of a low-resolution frame
+            Sparse linear operator representing the image observation model
+
+    """
     operators = []
 
-    for index in range(len(images)):
+    for index in range(im_count):
         dec_mat = decimation_matrix(M, N, downsample_factor)
         blur_mat = blur_matrix(M, N, psf)
         op = dec_mat * blur_mat
-
         operators.append(op)
 
     return sparse.vstack(operators, format='csr')
@@ -35,12 +65,16 @@ def transform_coordinates(x, y, tf):
     return int(X), int(Y)
 
 
+# Spare motion operator can be represented through bilinear or bicubic interpolation
+def motion_matrix():
+    return
+
+
 def decimation_matrix(M, N, downsample_factor):
     """
         Matrix operator to subsample an image by a given factor
         Reference: http://users.wfu.edu/plemmons/papers/siam_maa3.pdf ( sect. A.1)
 
-        TODO: Fix to work on non-square images
         Parameters
         ----------
         M, N : int
@@ -77,7 +111,7 @@ def out_of_bounds(mm, nn, M, N):
     return mm < 0 or mm >= M or nn < 0 or nn >= N
 
 
-# TODO: Rewrite
+# TODO: Rewrite both the blur and translation operators
 def blur_matrix(M, N, psf):
     """
         Sparse block Toeplitz matrix (BTTB) to represent convolution through matrix multiplication
