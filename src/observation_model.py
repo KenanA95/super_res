@@ -8,7 +8,7 @@ from random import randint
 
 class ObservationModel:
     """
-        Given a high-resolution image, this module generates low-resolution representations
+        Given a high-resolution image, this module generates low-resolution representations for testing purposes only
 
         Parameters
         ----------

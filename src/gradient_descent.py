@@ -5,6 +5,7 @@ import numpy as np
 def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
     """
         Solve Ax=b through steepest descent optimization
+        Reference: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.4.1)
 
         Parameters
         ----------

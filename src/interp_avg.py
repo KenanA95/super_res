@@ -47,6 +47,9 @@ def mse(x, y):
 
 
 def compare(original, restored):
+    """
+        Side by side comparison of the original image and reconstruction effort with MSE, PSNR, and SSIM labels
+    """
 
     fig, axes = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, subplot_kw={'adjustable': 'box-forced'})
     ax = axes.ravel()
