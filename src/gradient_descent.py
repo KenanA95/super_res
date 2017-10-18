@@ -8,21 +8,46 @@ from restore import compare
 
 
 def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
+    """
+        Solve Ax=b through steepest descent optimization
+
+        Parameters
+        ----------
+        low_res: list
+            A list of the low_resolution input frames
+        psf: ndarray
+            An estimate of the Point Spread Function blurring the image
+        x0: ndarray
+            The initial guess for the high-resolution image. Typically the upsampled average image
+        upsample_factor: int
+            How much to scale the resolution
+        iterations: int
+            Number of iterations performed for the steepest descent
+        damp: float
+            The weight given to the initial guess. The larger the value, the closer the result is to x0
+
+        Returns
+        -------
+        x: ndarray
+            The high-resolution estimate
+    """
 
     # Stack all the low-resolution images into the vector b in lexicographical order
-    size = len(low_res) * np.prod(low_res[0].shape)
-    b = np.empty(size)
-    M = np.prod(low_res[0].shape)
+    lr_size = np.prod(low_res[0].shape)
+    b = np.empty(len(low_res) * lr_size)
 
     for i in range(len(low_res)):
-        b[i * M:(i + 1) * M] = low_res[i].flat
+        b[i * lr_size:(i + 1) * lr_size] = low_res[i].flat
 
-    #
+    # Get the dimensions of the new high-resolution image
     M, N = low_res[0].shape[0] * upsample_factor, low_res[0].shape[1] * upsample_factor
+
+    # Linear operator representing blur and decimation
     A = construct_operator(len(low_res), M, N, downsample_factor=upsample_factor, psf=psf)
 
     x = x0.copy().flat
 
+    # Steepest descent
     for i in range(iterations):
         step = damp * -1 * (A.T * ((A * x) - b))
         prior = damp * np.subtract(x, x0.flat)
@@ -33,12 +58,12 @@ def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
 
 # EXAMPLE
 
-# Starting high-resolution image 145x145
+# Starting high-resolution image 81x81
 image = AiryDisk2DKernel(10)
 
 psf = np.ones((3, 3)) / 9
 
-# Create 10 low-resolution frames of 29x29
+# Create 10 low-resolution frames of 27x27
 camera = ObservationModel(image, n=15, psf=psf, downsample_factor=3, translation_range=(-2, 2),
                           rotation_range=(0, 0), noise_scale=0.0)
 
