@@ -1,5 +1,5 @@
 import unittest
-from gradient_descent import gradient_descent
+from iterative import gradient_descent, lsqr_restore, irani_peleg_restore
 
 
 class TestGradientDescent(unittest.TestCase):
