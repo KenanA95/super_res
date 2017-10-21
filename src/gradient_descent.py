@@ -13,7 +13,7 @@ def stack_low_res(low_res):
     return b
 
 
-def gradient_descent(low_res, x0, psf, upsample_factor, iterations, damp=1e-1):
+def gradient_descent(low_res, A, x0, upsample_factor, iterations, damp=1e-1):
     """
         Solve Ax=b through steepest descent optimization
         Reference: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.4.1)
@@ -22,8 +22,8 @@ def gradient_descent(low_res, x0, psf, upsample_factor, iterations, damp=1e-1):
         ----------
         low_res: list
             A list of the low_resolution input frames
-        psf: ndarray
-            An estimate of the Point Spread Function blurring the image
+        A: Sparse CSR matrix
+            Sparse operator representing Decimation + Blur
         x0: ndarray
             The initial guess for the high-resolution image. Typically the upsampled average image
         upsample_factor: int
@@ -44,9 +44,6 @@ def gradient_descent(low_res, x0, psf, upsample_factor, iterations, damp=1e-1):
 
     # Get the dimensions of the new high-resolution image
     M, N = low_res[0].shape[0] * upsample_factor, low_res[0].shape[1] * upsample_factor
-
-    # Linear operator representing blur and decimation
-    A = construct_operator(len(low_res), M, N, downsample_factor=upsample_factor, psf=psf)
 
     x = x0.copy().flat
 
