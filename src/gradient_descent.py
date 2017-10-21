@@ -57,7 +57,30 @@ def gradient_descent(low_res, A, x0, upsample_factor, iterations, damp=1e-1):
 
 
 def lsqr_restore(low_res, A, x0, upsample_factor, iter_lim, atol=1e-8, btol=1e-8, damp=1e-1):
+    """
+            Solve Ax=b through least-solutions solution
+            Reference: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.4.1)
 
+            Parameters
+            ----------
+            low_res: list
+                A list of the low_resolution input frames
+            A: Sparse CSR matrix
+                Sparse operator representing Decimation + Blur
+            x0: ndarray
+                The initial guess for the high-resolution image. Typically the upsampled average image
+            upsample_factor: int
+                How much to scale the resolution
+            iter_lim: int
+               Explicit limitation on number of iterations (for safety)
+            damp: float
+                Damping coefficient
+
+            Returns
+            -------
+            x: ndarray
+                The high-resolution estimate
+    """
     # Stack all the low-resolution images into the vector b in lexicographical order
     b = stack_low_res(low_res)
 
