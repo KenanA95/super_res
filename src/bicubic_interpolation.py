@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # Super-resolution by interpolating the averaged image
 
 
-def interpolation_restore(low_res, psf, downsample_factor, align_function=centroid_align):
+def interpolation_restore(low_res, psf, downsample_factor, align_function=centroid_align, deconvolve=False):
     """
         Rudin's forward-projection method
         Reference: http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (Sect. 5.8)
@@ -25,6 +25,8 @@ def interpolation_restore(low_res, psf, downsample_factor, align_function=centro
             Magnification factor to recover
         align_function : func
             The function used to align the low-resolution frames
+        deconvolve: bool
+            Whether or not a deconvolution algorithm should be applied to remove the blur
     """
     # Align the stars according to their centroids
     low_res = align_function(low_res)
@@ -37,7 +39,9 @@ def interpolation_restore(low_res, psf, downsample_factor, align_function=centro
 
     # Deconvolve the PSF with standard single image method
     high_res = normalize(high_res, new_min=0, new_max=1)
-    high_res = restoration.richardson_lucy(high_res, psf, iterations=15)
+
+    if deconvolve:
+        high_res = restoration.wiener(high_res, psf, balance=25)    # Balance is roughly the PSNR
 
     return high_res
 
