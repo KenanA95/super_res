@@ -2,7 +2,18 @@ from linear_operator import construct_operator
 import numpy as np
 
 
-def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
+# Stack all the low-resolution images into the vector b in lexicographical order
+def stack_low_res(low_res):
+    lr_size = np.prod(low_res[0].shape)
+    b = np.empty(len(low_res) * lr_size)
+
+    for i in range(len(low_res)):
+        b[i * lr_size:(i + 1) * lr_size] = low_res[i].flat
+
+    return b
+
+
+def gradient_descent(low_res, x0, psf, upsample_factor, iterations, damp=1e-1):
     """
         Solve Ax=b through steepest descent optimization
         Reference: http://scholar.sun.ac.za/handle/10019.1/5189 ( sect. 7.4.1)
@@ -29,11 +40,7 @@ def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
     """
 
     # Stack all the low-resolution images into the vector b in lexicographical order
-    lr_size = np.prod(low_res[0].shape)
-    b = np.empty(len(low_res) * lr_size)
-
-    for i in range(len(low_res)):
-        b[i * lr_size:(i + 1) * lr_size] = low_res[i].flat
+    b = stack_low_res(low_res)
 
     # Get the dimensions of the new high-resolution image
     M, N = low_res[0].shape[0] * upsample_factor, low_res[0].shape[1] * upsample_factor
@@ -48,6 +55,5 @@ def gradient_descent(low_res, psf, x0, upsample_factor, iterations, damp=1e-1):
         step = damp * -1 * (A.T * ((A * x) - b))
         prior = damp * np.subtract(x, x0.flat)
         x += step  # + prior
-        print("Gradient descent step {0}".format(i))
 
     return np.reshape(x, (M, N))
