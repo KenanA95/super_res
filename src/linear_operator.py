@@ -9,7 +9,13 @@ Construct an operator to solve Ax=b where
      b is a stacked vector of all the low-resolution images
 
 Note:
-Motion operator is not implemented because the low-resolution images are pre-aligned
+Motion operator is not currently implemented for the following reasons
+
+1. The blur and decimation matrix are the same for every image, but the motion matrix is not. Constructing the sparse
+operator for the high-volume of star representations (500+) requires a different operator for every image
+
+2. The centroid registration method has proven accurate within 1/10th of a pixel
+
 For more information on how to implement this matrix
        http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (sect. 5.4.4)
 """
@@ -35,15 +41,13 @@ def construct_operator(im_count, M, N, downsample_factor, psf):
             Sparse linear operator representing the image observation model
 
     """
-    operators = []
 
-    for index in range(im_count):
-        dec_mat = decimation_matrix(M, N, downsample_factor)
-        blur_mat = blur_matrix(M, N, psf)
-        op = dec_mat * blur_mat
-        operators.append(op)
+    dec_mat = decimation_matrix(M, N, downsample_factor)
+    blur_mat = blur_matrix(M, N, psf)
+    operator = dec_mat * blur_mat
+    operator = np.repeat(operator, im_count, axis=0)
 
-    return sparse.vstack(operators, format='csr')
+    return sparse.vstack(operator, format='csr')
 
 
 def transform_coordinates(x, y, tf):
