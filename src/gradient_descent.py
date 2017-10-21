@@ -1,5 +1,5 @@
-from linear_operator import construct_operator
 import numpy as np
+from scipy.sparse.linalg import lsqr
 
 
 # Stack all the low-resolution images into the vector b in lexicographical order
@@ -52,5 +52,24 @@ def gradient_descent(low_res, A, x0, upsample_factor, iterations, damp=1e-1):
         step = damp * -1 * (A.T * ((A * x) - b))
         prior = damp * np.subtract(x, x0.flat)
         x += step  # + prior
+
+    return np.reshape(x, (M, N))
+
+
+def lsqr_restore(low_res, A, x0, upsample_factor, iter_lim, atol=1e-8, btol=1e-8, damp=1e-1):
+
+    # Stack all the low-resolution images into the vector b in lexicographical order
+    b = stack_low_res(low_res)
+
+    # Get the dimensions of the new high-resolution image
+    M, N = low_res[0].shape[0] * upsample_factor, low_res[0].shape[1] * upsample_factor
+
+    x0 = x0.flat
+    b = b - A*x0
+
+    x, istop, itn, r1norm, r2norm, anorm, acond, arnorm, xnorm, var = \
+        lsqr(A, b, damp, atol, btol, iter_lim=iter_lim, show=True)
+
+    x = x0 + x
 
     return np.reshape(x, (M, N))
