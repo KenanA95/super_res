@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # Super-resolution by interpolating the averaged image
 
 
-def interpolation_restore(low_res, psf, downsample_factor, align_function=centroid_align, deconvolve=False):
+def bicubic_restore(low_res, psf, downsample_factor, align_function=centroid_align, deconvolve=False):
     """
         Rudin's forward-projection method
         Reference: http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (Sect. 5.8)
