@@ -6,6 +6,18 @@ from linear_operator import construct_operator
 from scipy.signal import convolve2d
 
 
+__doc__ = """
+Iterative approaches to solve Ax=b where
+     A is the sparse operator representing Decimation + Blur
+     x is the high-resolution target
+     b is a stacked vector of all the low-resolution images
+
+TODO:
+    1. Write simple test cases for each method
+    2. Test the methods on the synthetic images
+"""
+
+
 # Stack all the low-resolution images into the vector b in lexicographical order
 def stack_low_res(low_res):
     lr_size = np.prod(low_res[0].shape)
