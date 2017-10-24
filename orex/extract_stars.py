@@ -101,3 +101,46 @@ def divide_image(image, shape):
             blocks[index] = block
 
     return blocks
+
+
+def extract_stars_by_section(images, shape, n, size, sigma=2, saturation_thresh=3500):
+    """
+
+        Divides each image into sections and extracts the stars of each section across all images
+
+        Parameters
+        ----------
+        images: list
+            The NavCam images to extract the stars from
+        shape: tuple
+            Shape to divide each image into
+        n: int
+            Number of stars to extract from each section
+        size: int
+            Size of the extracted star. i.e size=7 => star = 7x7
+        sigma
+            Sigma value for the gaussian filter. Controls the level of blur when searching for stars
+        saturation_thresh
+            DN value indicating a pixel is over saturated and the star should be ignored
+
+        Returns
+        -------
+        section_stars: dict
+            The extracted stars of every section in the form of a dictionary. The key to any section is
+            its numeric index
+
+    """
+    # Divide each image into a list of sections
+    divided_images = [divide_image(im, shape) for im in images]
+
+    # Dictionary to store the stars from each section across all images
+    keys = np.arange(np.prod(shape))
+    section_stars = {key: [] for key in keys}
+
+    for im in divided_images:
+        for i, section in enumerate(im):
+            star_locs = star_locations(section, n, sigma, saturation_thresh)
+            stars = extract_stars(section, star_locs, size)
+            section_stars[i].extend(stars)
+
+    return section_stars
