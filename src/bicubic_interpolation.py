@@ -1,8 +1,6 @@
 import numpy as np
 from registration import centroid_align
 from scipy import misc
-from observation_model import normalize
-from skimage import restoration
 from skimage.measure import compare_ssim as ssim, compare_psnr as psnr
 import matplotlib.pyplot as plt
 
@@ -10,7 +8,7 @@ import matplotlib.pyplot as plt
 # Super-resolution by interpolating the averaged image
 
 
-def bicubic_restore(low_res, psf, downsample_factor, align_function=centroid_align, deconvolve=False):
+def bicubic_restore(low_res, downsample_factor, align_function=centroid_align):
     """
         Rudin's forward-projection method
         Reference: http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (Sect. 5.8)
@@ -19,14 +17,10 @@ def bicubic_restore(low_res, psf, downsample_factor, align_function=centroid_ali
         ----------
         low_res : ndarray
             The low-resolution input images
-        psf : ndarray
-            The estimated point spread function used for deconvolution
         downsample_factor : integer
             Magnification factor to recover
         align_function : func
             The function used to align the low-resolution frames
-        deconvolve: bool
-            Whether or not a deconvolution algorithm should be applied to remove the blur
     """
     # Align the stars according to their centroids
     low_res = align_function(low_res)
@@ -36,12 +30,6 @@ def bicubic_restore(low_res, psf, downsample_factor, align_function=centroid_ali
 
     # Up-sample through bicubic interpolation
     high_res = misc.imresize(average_image, downsample_factor*100, interp='bicubic')
-
-    # Deconvolve the PSF with standard single image method
-    high_res = normalize(high_res, new_min=0, new_max=1)
-
-    if deconvolve:
-        high_res = restoration.wiener(high_res, psf, balance=25)    # Balance is roughly the PSNR
 
     return high_res
 
