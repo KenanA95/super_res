@@ -87,16 +87,17 @@ def extract_stars(im, locations, size):
     return stars
 
 
-# Split an image into blocks
+# Split an image into a list of blocks
 def divide_image(image, shape):
-    y, x = shape
+    x, y = shape
     vertical_sections = np.vsplit(image, x)
-
-    sections = np.empty((y, x), dtype=object)
+    blocks = np.empty((x * y), dtype=object)
 
     for row, section in enumerate(vertical_sections):
         sub_sections = np.array(np.hsplit(section, y)).astype(float)
-        for col, s in enumerate(sub_sections):
-            sections[col][row] = sub_sections[col]
 
-    return sections
+        for col, block in enumerate(sub_sections):
+            index = np.ravel_multi_index((row, col), shape)
+            blocks[index] = block
+
+    return blocks
