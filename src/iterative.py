@@ -1,10 +1,8 @@
 import numpy as np
 from scipy.sparse.linalg import lsqr
 from registration import centroid_align
-from scipy import misc
-from observation_model import ObservationModel, normalize
-from registration import calculate_centroid
-from scipy.ndimage import fourier_shift
+from bicubic_interpolation import bicubic_restore
+from linear_operator import construct_operator
 from scipy.signal import convolve2d
 
 
@@ -117,7 +115,56 @@ def upsample_image(im, n):
     return upsampled_im
 
 
-# Irani-Peleg iterative back-projection method. Very much a work in progress
-# Reference: http://www.cse.huji.ac.il/course/2003/impr/supres-cvgip-gm91.pdf
 def irani_peleg_restore(low_res, psf, downsample_factor, iterations, k=1, align_function=centroid_align):
-    return
+    """
+        Irani-Peleg iterative back-projection method. Very much a work in progress
+        Reference: http://www.cse.huji.ac.il/course/2003/impr/supres-cvgip-gm91.pdf
+
+        Parameters
+        ----------
+        low_res: list
+            A list of the low_resolution input stars that are already aligned centrally
+        psf: ndarray
+            Matrix representation of the point spread function
+        downsample_factor: int
+            Magnification factor to recover
+        iterations: int
+        k: int
+        align_function: func
+            The function used to align the stars when creating the initial avaeraged image
+
+        Returns
+        -------
+        x: ndarray
+            The high-resolution estimate
+
+    """
+    # Initial estimate is the upsampled averaged image
+    x0 = bicubic_restore(low_res, downsample_factor, align_function)
+
+    # Dimensions of the high-resolution image
+    M, N = x0.shape[0], x0.shape[1]
+
+    # Construct the operator that decimates and blurs a single image
+    A = construct_operator(1, M, N, downsample_factor, psf)
+
+    x = x0.copy()
+
+    for i in range(iterations):
+        error = 0
+
+        for lr in low_res:
+            simulated_lr = A * x.flat
+            simulated_lr = np.reshape(simulated_lr, lr.shape)
+
+            delta = simulated_lr - lr
+            error += np.sum(abs(delta))
+
+            delta = upsample_image(delta, downsample_factor)
+            delta = convolve2d(delta, psf**k, 'same')
+
+            x += delta
+
+        print("Iteration: {0} \t Error: {1}".format(i, error))
+
+    return x
