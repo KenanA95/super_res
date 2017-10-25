@@ -101,7 +101,7 @@ def divide_image(image, shape):
     """
         Split an image into a list of blocks
     """
-    x, y = shape
+    y, x = shape
     vertical_sections = np.vsplit(image, x)
     blocks = np.empty((x * y), dtype=object)
 
@@ -109,13 +109,13 @@ def divide_image(image, shape):
         sub_sections = np.array(np.hsplit(section, y)).astype(float)
 
         for col, block in enumerate(sub_sections):
-            index = np.ravel_multi_index((row, col), shape)
+            index = np.ravel_multi_index((row, col), shape[::-1])
             blocks[index] = block
 
     return blocks
 
 
-def extract_stars_by_section(images, shape, n, size, sigma=2, saturation_thresh=3500):
+def extract_by_section(images, shape, n, size, sigma=2, saturation_thresh=3500):
     """
 
         Divides each image into sections and extracts the stars of each section across all images
