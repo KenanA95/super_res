@@ -1,6 +1,6 @@
 # super_res
 
-Super-resolution is a set of algorithms designed enhance to image quality
+Super-resolution is a set of algorithms designed to enhance image quality
 by combining complementary information found throughout different low-resolution
 frames.
 
