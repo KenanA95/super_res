@@ -1,23 +1,16 @@
 import numpy as np
 import scipy.sparse as sparse
+from itertools import product
 
 __doc__ = """
 
 Construct an operator to solve Ax=b where
-     A is the sparse operator representing Decimation + Blur
+     A is the sparse operator representing Decimation + Homogeneous Transformation
      x is the high-resolution target
      b is a stacked vector of all the low-resolution images
 
-Note:
-Motion operator is not currently implemented for the following reasons
-
-1. The blur and decimation matrix are the same for every image, but the motion matrix is not. Constructing the sparse
-operator for the high-volume of star representations (500+) requires a different operator for every image
-
-2. The centroid registration method has proven accurate within 1/10th of a pixel
-
-For more information on how to implement this matrix
-       http://www.robots.ox.ac.uk/~vgg/publications/papers/capel01a.pdf (sect. 5.4.4)
+    The blur matrix is not included because we are working with the special case where
+    the high-resolution target is the PSF. I included an example of how it can be built for other cases.
 """
 
 
@@ -48,30 +41,6 @@ def construct_operator(im_count, M, N, downsample_factor, psf):
     operator = np.repeat(operator, im_count, axis=0)
 
     return sparse.vstack(operator, format='csr')
-
-
-def transform_coordinates(x, y, tf):
-    """
-        tf =
-            [[cos(theta),     -sin(theta),  tx]
-            [ sin(theta),     cos(theta),   ty]
-            [0,               0,            1]]
-
-        X = a0 * x - b0 * y + a1 =
-          = s * x * cos(rotation) - s * y * sin(rotation) + a1
-
-        Y = b0 * x + a0 * y + b1 =
-          = s * x * sin(rotation) + s * y * cos(rotation) + b1
-    """
-    X = (tf[0, 0] * x + tf[0, 1] * y + tf[0, 2])
-    Y = (tf[1, 0] * x + tf[1, 1] * y + tf[1, 2])
-
-    return int(X), int(Y)
-
-
-# Spare motion operator can be represented through bilinear or bicubic interpolation
-def motion_matrix():
-    return
 
 
 def decimation_matrix(M, N, downsample_factor):
@@ -111,11 +80,72 @@ def decimation_matrix(M, N, downsample_factor):
     return sparse.coo_matrix((data, (sparse_row_indices.flat, sparse_col_indices.flat)), shape=(m**2, N**2))
 
 
+def transformation_matrix(tf, image_shape):
+    """
+        Represent homographic transformation as linear operator using bilinear interpolation
+        Source: https://github.com/elegant-scipy/elegant-scipy/blob/master/markdown/ch5.markdown
+
+        Parameters
+        ----------
+        tf : (3, 3) ndarray
+            Transformation matrix.
+        image_shape : (M, N)
+            Shape of input  image
+
+        Returns
+        -------
+        A : (M * N, M * N) sparse matrix
+            Linear-operator representing transformation + bilinear interpolation.
+
+    """
+    # Invert matrix.  This tells us, for each output pixel, where to find its corresponding input pixel.
+    H = np.linalg.inv(tf)
+
+    m, n = image_shape
+
+    row, col, values = [], [], []
+
+    # For each pixel in the output image...
+    for sparse_op_row, (out_row, out_col) in \
+            enumerate(product(range(m), range(n))):
+
+        # Compute where it came from in the input image
+        in_row, in_col, in_abs = H @ [out_row, out_col, 1]
+        in_row /= in_abs
+        in_col /= in_abs
+
+        # if the coordinates are outside of the original image, we will have 0 at this position
+        if (not 0 <= in_row < m - 1 or
+                not 0 <= in_col < n - 1):
+            continue
+
+        # Use the four surrounding pixels to interpolate the output pixel value
+        top = int(np.floor(in_row))
+        left = int(np.floor(in_col))
+
+        # Calculate the position of the output pixel, mapped into the input image, within the four selected pixels
+        t = in_row - top
+        u = in_col - left
+
+        # The current row of the sparse operator matrix is given by the raveled output pixel coordinates,
+        # contained in `sparse_op_row`. Four surrounding input pixels correspond to four columns so repeat four times
+        row.extend([sparse_op_row] * 4)
+
+        # Weighted values are calculated according to the bilinear interpolation algorithm
+        sparse_op_col = np.ravel_multi_index(
+                ([top,  top,      top + 1, top + 1],
+                 [left, left + 1, left,    left + 1]), dims=(m, n))
+        col.extend(sparse_op_col)
+        values.extend([(1-t) * (1-u), (1-t) * u, t * (1-u), t * u])
+
+    return sparse.coo_matrix((values, (row, col)), shape=(m*n, m*n)).tocsr()
+
+
 def out_of_bounds(mm, nn, M, N):
     return mm < 0 or mm >= M or nn < 0 or nn >= N
 
 
-# TODO: Rewrite both the blur and translation operators
+# TODO: Rewrite blur operator
 def blur_matrix(M, N, psf):
     """
         Sparse block Toeplitz matrix (BTTB) to represent convolution through matrix multiplication
