@@ -1,18 +1,15 @@
 import unittest
-from linear_operator import decimation_matrix, blur_matrix
+from linear_operator import decimation_matrix, blur_matrix, transformation_matrix
 from skimage import data
 import numpy as np
 from scipy.signal import convolve2d
 import numpy.testing as npt
+from skimage import transform as tf
+from observation_model import normalize
+from matplotlib import pyplot as plt
 
 
 class TestOperator(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
 
     def test_decimation(self):
         # 512x512 original image
@@ -40,6 +37,27 @@ class TestOperator(unittest.TestCase):
         actual = convolve2d(im, psf, 'same', boundary='fill', fillvalue=0)
 
         npt.assert_equal(np.rint(im_blurred), np.rint(actual))
+
+    def test_transform(self):
+        im = data.camera()
+
+        # Apply a translation to an image
+        tx, ty = 25, 15
+        H = np.array([
+            [1, 0, tx],
+            [0, 1, ty],
+            [0, 0, 1]
+        ])
+        tform = tf.EuclideanTransform(H)
+        actual_translated = tf.warp(im, tform.inverse)
+
+        # Apply the same translation using the operator
+        tf_operator = transformation_matrix(H, im.shape)
+        op_translated = tf_operator * im.flat
+        op_translated = np.reshape(op_translated, (512, 512))
+        op_translated = normalize(op_translated, 0, 1)
+
+        npt.assert_equal(actual_translated, op_translated)
 
 if __name__ == '__main__':
     unittest.main()
