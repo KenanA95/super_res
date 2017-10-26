@@ -8,7 +8,7 @@ from scipy.signal import convolve2d
 
 __doc__ = """
 Iterative approaches to solve Ax=b where
-     A is the sparse operator representing Decimation + Blur
+     A is the sparse operator representing Decimation + Homogeneous Transformation
      x is the high-resolution target
      b is a stacked vector of all the low-resolution images
 
@@ -18,13 +18,15 @@ TODO:
 """
 
 
-# Stack all the low-resolution images into the vector b in lexicographical order
-def stack_low_res(low_res):
-    lr_size = np.prod(low_res[0].shape)
-    b = np.empty(len(low_res) * lr_size)
+def stack_images(images):
+    """
+        Stack a set of images into a vector (lexicographical order)
+    """
+    im_size = np.prod(images[0].shape)
+    b = np.empty(len(images) * im_size)
 
-    for i in range(len(low_res)):
-        b[i * lr_size:(i + 1) * lr_size] = low_res[i].flat
+    for i in range(len(images)):
+        b[i * im_size:(i + 1) * im_size] = images[i].flat
 
     return b
 
@@ -54,7 +56,7 @@ def gradient_descent(low_res, A, x0, iterations, damp=1e-1):
     """
 
     # Stack all the low-resolution images into the vector b in lexicographical order
-    b = stack_low_res(low_res)
+    b = stack_images(low_res)
 
     # Get the dimensions of the new high-resolution image
     M, N = x0.shape[0], x0.shape[1]
@@ -94,7 +96,7 @@ def lsqr_restore(low_res, A, x0, iter_lim, atol=1e-8, btol=1e-8, damp=1e-1):
                 The high-resolution estimate
     """
     # Stack all the low-resolution images into the vector b in lexicographical order
-    b = stack_low_res(low_res)
+    b = stack_images(low_res)
 
     # Get the dimensions of the new high-resolution image
     M, N = x0.shape[0], x0.shape[1]
