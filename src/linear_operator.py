@@ -9,38 +9,38 @@ Construct an operator to solve Ax=b where
      x is the high-resolution target
      b is a stacked vector of all the low-resolution images
 
-    The blur matrix is not included because we are working with the special case where
+    The blur matrix / convolution is not included because we are working with the special case where
     the high-resolution target is the PSF. I included an example of how it can be built for other cases.
 """
 
 
-def construct_operator(im_count, M, N, downsample_factor, psf):
+def construct_operator(tf_matrices, M, N, downsample_factor):
     """
         Linear operator to represent the image observation model
 
         Parameters
         ----------
-        im_count: int
-            Number of images
+        tf_matrices: list
+            List of ndarray transformation matrices for the stars relative to the center of the image
         M, N: int
             Dimensions of the high-resolution image
         downsample_factor: int
             How much to decimate the images by
-        psf: ndarray
-            Matrix representation of the point spread function
         Returns
         -------
         operator: ndarray with dimensions (im_count * m*n, M*N) where m,n are the dimensions of a low-resolution frame
             Sparse linear operator representing the image observation model
 
     """
+    operators = []
+    for tf in tf_matrices:
 
-    dec_mat = decimation_matrix(M, N, downsample_factor)
-    blur_mat = blur_matrix(M, N, psf)
-    operator = dec_mat * blur_mat
-    operator = np.repeat(operator, im_count, axis=0)
+        D = decimation_matrix(M, N, downsample_factor)
+        F = transformation_matrix(tf, (M, N))
+        operators.append(D * F)
 
-    return sparse.vstack(operator, format='csr')
+    # Fast matrix vector multiplication through CSR representation
+    return sparse.vstack(operators, format='csr')
 
 
 def decimation_matrix(M, N, downsample_factor):
@@ -62,6 +62,7 @@ def decimation_matrix(M, N, downsample_factor):
             Where m is the size of the LR frame and N is the size of the HR image
 
     """
+    # Dimensions of the low-resolution image
     m, n = int(M / downsample_factor), int(N / downsample_factor)
 
     # Get a grid the size of the lr frame to represent the indices
