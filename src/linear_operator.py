@@ -107,17 +107,15 @@ def transformation_matrix(tf, image_shape):
     row, col, values = [], [], []
 
     # For each pixel in the output image...
-    for sparse_op_row, (out_row, out_col) in \
-            enumerate(product(range(m), range(n))):
+    for sparse_op_row, (out_row, out_col) in enumerate(product(range(m), range(n))):
 
         # Compute where it came from in the input image
-        in_row, in_col, in_abs = H @ [out_row, out_col, 1]
+        in_col, in_row, in_abs = H @ [out_col, out_row, 1]
         in_row /= in_abs
         in_col /= in_abs
 
         # if the coordinates are outside of the original image, we will have 0 at this position
-        if (not 0 <= in_row < m - 1 or
-                not 0 <= in_col < n - 1):
+        if not 0 <= in_row < m - 1 or not 0 <= in_col < n - 1:
             continue
 
         # Use the four surrounding pixels to interpolate the output pixel value
