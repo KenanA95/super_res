@@ -7,16 +7,17 @@ from observation_model import normalize
 
 
 def calculate_centroid(im):
+    """ Use Otsu's method to distinguish between star and background and then calculate the centroid """
     thresh = threshold_otsu(im)
     binary = im > thresh
     return ndimage.measurements.center_of_mass(binary)
 
 
-# Align the stars according to their centroids
 def centroid_align(stars):
-
+    """ Align the stars according to their centroids  """
     center = int(stars[0].shape[0] / 2), int(stars[0].shape[1] / 2)
     aligned = []
+
     for star in stars:
         centroid = calculate_centroid(star)
         shift = np.subtract(center, centroid)
@@ -27,11 +28,11 @@ def centroid_align(stars):
     return aligned
 
 
-# Align using phase correlation according to first image in the set
 def cross_corr_align(low_res):
+    """ Align using phase correlation according to first image in the set """
     src = low_res[0]
-
     aligned = []
+
     for lr in low_res:
         shift, error, diffphase = register_translation(src, lr, 100)
         im = fourier_shift(np.fft.fftn(lr), shift)
