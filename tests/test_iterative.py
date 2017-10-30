@@ -1,54 +1,74 @@
 import unittest
 import numpy as np
-from skimage import data
-from observation_model import ObservationModel
-from scipy.ndimage import fourier_shift
+from observation_model import normalize
 from matplotlib import pyplot as plt
+from linear_operator import blur_matrix, decimation_matrix, transformation_matrix
+import scipy.sparse as sparse
 from iterative import gradient_descent, lsqr_restore, irani_peleg_restore
+from skimage.measure import compare_mse
 
+__doc__ = """
+Test the iterative reconstruction methods where the translation and PSF are known. Verify that the solution is
+within a reasonable margin of error.
 
-# 1. Create a set of low-resolution images with the exact translations and psf known
-# 2. Reconstruct the original image
-# 3. Make sure the two are within a small margin
-
-# Note: The answer will never be the exact same because there will always be information loss during
-# the sub-sampling of the image. There are also other factors such as what kind of geometric transform is used
+Note: The answer will never be the exact same because there will always be information loss during
+the sub-sampling of the image. There are also other factors like the geometric transform applied by observation
+model
+"""
 
 
 class TestIterative(unittest.TestCase):
 
     def setUp(self):
-        # Starting 512x512 high-res image
-        im = data.camera()
+        # Starting 100x100 high-res image
+        self.im = plt.imread("lenna.png")
 
         # Create a set low-res images with no translations and a spatially-invariant PSF
-        psf = np.ones((3, 3)) / 9
-        low_res = ObservationModel(im, n=15, psf=psf, downsample_factor=4, translation_range=(0, 0),
-                                   rotation_range=(0, 0), noise_scale=0).low_res_images
+        self.psf = np.ones((3, 3)) / 9
+        n = 10
 
-        # Add a set of known translations
+        # Create a set of random transformation matrices
         self.transform_matrices = []
-        self.low_res = []
-        for lr in low_res:
+        for i in range(n):
 
-            # Transform matrix to represent just translation
-            tx, ty = np.random.randint(-20, 20, size=(1, 2))[0]
+            # Represent just translation
+            tx, ty = np.random.randint(-3, 3, size=(1, 2))[0]
             tf_mat = np.array([
                 [1, 0, tx],
                 [0, 1, ty],
                 [0, 0, 1]
             ])
-            lr = fourier_shift(np.fft.fftn(lr), (ty, tx))
-            lr = np.fft.ifftn(lr).real
-            self.low_res.append(lr)
-            self.transform_matrices.append(tf_mat)
+            self.transform_matrices.append(np.linalg.inv(tf_mat))
 
-    def tearDown(self):
-        self.low_res = []
-        self.transform_matrices = []
+        # Generate the low-res observations using the operator
+        self.A = construct_operator(self.transform_matrices, 100, 100, self.psf, downsample_factor=2)
+        self.low_res = self.A * self.im.flat
+        self.low_res = np.reshape(self.low_res, (n*50, 50))
+        self.low_res = np.vsplit(self.low_res, n)
 
     def test_lsqr(self):
-        pass
+        restored = lsqr_restore(self.low_res, self.A, x0=np.zeros((100, 100)), iter_lim=None, damp=0)
+        im = normalize(self.im, 0, 1).astype(float)
+        restored = normalize(restored, 0, 1).astype(float)
+        mse = compare_mse(im, restored)
+        # Averaged squared error < 0.009. In a scale from 0-255 that's an averaged squared error approx. < 2 DN
+        self.assertLess(mse, 9e-3)
+
+
+# Construct an operator that also accounts for the PSF. When it comes to the  NavCam images we don't need to
+# because the high-resolution target is the PSF, but its necessary for any other set of images
+def construct_operator(tf_matrices, M, N, psf, downsample_factor):
+
+    operators = []
+    for tf in tf_matrices:
+
+        D = decimation_matrix(M, N, downsample_factor)
+        F = transformation_matrix(tf, (M, N))
+        H = blur_matrix(M, N, psf)
+        operators.append(D * F * H)
+
+    return sparse.vstack(operators, format='csr')
+
 
 if __name__ == '__main__':
     unittest.main()
