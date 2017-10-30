@@ -1,13 +1,17 @@
 # super_res
 
-Super-resolution is a set of algorithms designed to enhance image quality
+Super-resolution refers to a set of algorithms designed to enhance image quality
 by combining complementary information found throughout different low-resolution
 frames.
 
-
-For more information and examples see docs
-
-
+### Directory Guide
+#### `docs`
+Notebooks containing summaries and example results for the different
+super-resolution methods
+#### `orex`
+Package to deal with extracting and formatting data from the OSIRIS-REx NavCams
+#### `src`
+Super-resolution algorithm implementations
 ###  Project Introduction
 NASA’s OSIRIS-REx asteroid sample return mission spacecraft includes the
 Touch And Go Camera System (TAGCAMS) three camera-head instrument. The
