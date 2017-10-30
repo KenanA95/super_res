@@ -1,7 +1,7 @@
 import numpy as np
 from registration import centroid_align
 from scipy import misc
-from skimage.measure import compare_ssim as ssim, compare_psnr as psnr
+from skimage.measure import compare_ssim as ssim, compare_psnr as psnr, compare_mse as mse
 import matplotlib.pyplot as plt
 
 
@@ -32,10 +32,6 @@ def bicubic_restore(low_res, downsample_factor, align_function=centroid_align):
     high_res = misc.imresize(average_image, downsample_factor*100, interp='bicubic')
 
     return high_res
-
-
-def mse(x, y):
-    return np.linalg.norm(x-y)
 
 
 def compare(original, restored):
