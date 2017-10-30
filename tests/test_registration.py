@@ -37,10 +37,6 @@ class TestRegistration(unittest.TestCase):
             self.low_resolution.append(im)
             self.translations.append((tx, ty))
 
-    def tearDown(self):
-        self.low_resolution = None
-        self.translations = None
-
     def test_centroid_registration(self):
         # Center of the image is the reference point
         lr = self.low_resolution[0]
