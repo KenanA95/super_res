@@ -43,7 +43,7 @@ def cross_corr_align(low_res):
     return aligned
 
 
-def estimate_tf_matrices(low_res):
+def est_centroid_translations(low_res):
     """
         Estimate the translations of each star according the center of the image
 
@@ -70,6 +70,6 @@ def estimate_tf_matrices(low_res):
             [0, 0, 1]
         ])
 
-        transform_matrices.append(tf)
+        transform_matrices.append(np.linalg.inv(tf))
 
     return transform_matrices
