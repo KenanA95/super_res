@@ -34,6 +34,18 @@ def bicubic_restore(low_res, downsample_factor, align_function=centroid_align):
     return high_res
 
 
+def normalize(im, new_min, new_max):
+    """
+        Linear normalization to convert image to any range of values
+
+                        (new_max-new_min)
+        In = (I-Min) * ___________________ + new_min
+                           max - min
+
+    """
+    return (im-im.min()) * (new_max - new_min) / (im.max() - im.min()) + new_min
+
+
 def compare(original, restored):
     """
         Side by side comparison of the original image and reconstruction effort with MSE, PSNR, and SSIM labels

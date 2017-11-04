@@ -81,15 +81,3 @@ def random_low_res(image, n, psf, downsample, translation_range, rot_range, nois
         tf_matrices.append(transform_mat)
 
     return low_res, tf_matrices
-
-
-def normalize(im, new_min, new_max):
-    """
-        Linear normalization to convert image to any range of values
-
-                        (new_max-new_min)
-        In = (I-Min) * ___________________ + new_min
-                           max - min
-
-    """
-    return (im-im.min()) * (new_max - new_min) / (im.max() - im.min()) + new_min
