@@ -3,7 +3,6 @@ from scipy import ndimage
 from scipy.ndimage import fourier_shift
 from skimage.filters import threshold_otsu
 from skimage.feature import register_translation
-from observation_model import normalize
 
 
 def calculate_centroid(im):
@@ -37,7 +36,6 @@ def cross_corr_align(low_res):
         shift, error, diffphase = register_translation(src, lr, 100)
         im = fourier_shift(np.fft.fftn(lr), shift)
         im = np.fft.ifftn(im).real
-        im = normalize(im, new_min=0, new_max=1)
         aligned.append(im)
 
     return aligned
