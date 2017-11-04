@@ -3,6 +3,7 @@ from registration import centroid_align
 from scipy import misc
 from skimage.measure import compare_ssim as ssim, compare_psnr as psnr, compare_mse as mse
 import matplotlib.pyplot as plt
+import warnings
 
 
 # Super-resolution by interpolating the averaged image
@@ -50,6 +51,10 @@ def compare(original, restored):
     """
         Side by side comparison of the original image and reconstruction effort with MSE, PSNR, and SSIM labels
     """
+    if original.dtype != restored.dtype:
+        warnings.warn("The images are different data types. Converting both images to floats within 0-1 range")
+        original = normalize(original.astype(float), 0, 1)
+        restored = normalize(restored.astype(float), 0, 1)
 
     fig, axes = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, subplot_kw={'adjustable': 'box-forced'})
     ax = axes.ravel()
