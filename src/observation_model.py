@@ -6,104 +6,81 @@ from skimage.measure import block_reduce
 from random import randint
 
 
-class ObservationModel:
+def random_tf_matrix(translation_range, rotation_range):
     """
-        Given a high-resolution image, this module generates low-resolution representations for testing purposes only
+        Generate a random homogeneous transformation matrix within the provided ranges
 
-        Parameters
-        ----------
-        image : ndarray
-            The original high-resolution image
-        n : Integer
-            The number of low-resolution images to generate
-        psf : ndarray
-            Point spread function to convolve with the image for blur
-        downsample_factor : Integer
-            Factor to down-sample the hr image
-        translation_range : tuple
-            Min and max value in pixels that the random translation can be selected from
-        rotation_range : tuple
-            Min and max value that the random rotation angle can be in degrees (counter-clockwise)
-        noise_scale : float
-            Variance in the added gaussian noise
+        Returns
+        -------
+        The transformation matrix in the form
 
+            [[cos(theta),     -sin(theta),  tx]
+            [ sin(theta),     cos(theta),   ty]
+            [0,               0,            1]]
+        Where tx, ty is the translation in pixels and theta is the rotation in radians
     """
-    def __init__(self, image, n, psf, downsample_factor, translation_range, rotation_range, noise_scale):
-        self.image = image
-        self.psf = psf
-        self.downsample = downsample_factor
-        self.translation_range = translation_range
-        self.rotation_range = rotation_range
-        self.noise_scale = noise_scale
-        self.low_resolution = []
-        self.low_res_images = []
-        self.generate_low_resolution(n)
 
-    def generate_low_resolution(self, n):
+    theta = randint(rotation_range[0], rotation_range[1])
+    theta = math.radians(theta)
 
-        for index in range(n):
+    tx = randint(translation_range[0], translation_range[1])
+    ty = randint(translation_range[0], translation_range[1])
 
-            im = self.image
-
-            # Random motion in the form of translation and rotation
-            transform_mat = self.transformation_matrix()
-            tform = tf.EuclideanTransform(transform_mat)
-            im = tf.warp(im, tform)
-
-            # Blur with the PSF
-            im = convolve2d(im, self.psf, 'same')
-
-            # Down-sample the image by averaging local blocks
-            im = block_reduce(im, (self.downsample, self.downsample), func=np.mean)
-
-            # Add gaussian noise. Default mean 0 variance
-            noise = np.random.normal(size=im.shape, scale=self.noise_scale)
-            im += noise
-
-            # Add to the data-set
-            im = normalize(im, new_min=0, new_max=1)
-            self.low_res_images.append(im)
-            lr = LowResolution(im, transform_mat, self.downsample)
-            self.low_resolution.append(lr)
-
-    def transformation_matrix(self):
-        """
-            Generate a homogeneous transformation matrix with random translation/rotation within the provided range
-
-            Returns
-            -------
-            The transformation matrix in the form
-
-                [[cos(theta),     -sin(theta),  tx]
-                [ sin(theta),     cos(theta),   ty]
-                [0,               0,            1]]
-
-            Where tx, ty is the translation in pixels and theta is the rotation in radians
-        """
-
-        theta = randint(self.rotation_range[0], self.rotation_range[1])
-        theta = math.radians(theta)
-
-        tx = randint(self.translation_range[0], self.translation_range[1])
-        ty = randint(self.translation_range[0], self.translation_range[1])
-
-        return np.array([
-            [math.cos(theta), -math.sin(theta), tx],
-            [math.sin(theta), math.cos(theta),  ty],
-            [0, 0, 1]
-        ])
+    return np.array([
+        [math.cos(theta), -math.sin(theta), tx],
+        [math.sin(theta), math.cos(theta), ty],
+        [0, 0, 1]
+    ])
 
 
-class LowResolution:
+def random_low_res(image, n, psf, downsample, translation_range, rot_range, noise_scale):
     """
-        Store the low-resolution image and the information unique to it i.e the random transformation
-        matrix and random noise
+
+    Parameters
+    ----------
+    image : ndarray
+        The original high-resolution image
+    n : Integer
+        The number of low-resolution images to generate
+    psf : ndarray
+        Point spread function to convolve with the image for blur
+    downsample : Integer
+        Factor to down-sample the hr image
+    translation_range : tuple
+        Min and max value in pixels that the random translation can be selected from
+    rot_range : tuple
+        Min and max value that the random rotation angle can be in degrees (counter-clockwise)
+    noise_scale : float
+        Variance of the added gaussian noise
+
+    Returns
+    -------
 
     """
-    def __init__(self, image, transform_matrix, noise):
-        self.image = image
-        self.transform_matrix = transform_matrix
-        self.noise = noise
+    low_res, tf_matrices = [], []
+
+    for index in range(n):
+        im = image
+
+        # Random motion in the form of translation and rotation
+        transform_mat = random_tf_matrix(translation_range, rot_range)
+        tform = tf.EuclideanTransform(transform_mat)
+        im = tf.warp(im, tform)
+
+        # Blur with the PSF
+        im = convolve2d(im, psf, 'same')
+
+        # Down-sample the image by averaging local blocks
+        im = block_reduce(im, (downsample, downsample), func=np.mean)
+
+        # Add gaussian noise. Default mean 0 variance
+        noise = np.random.normal(size=im.shape, scale=noise_scale)
+        im += noise
+
+        low_res.append(im)
+        tf_matrices.append(transform_mat)
+
+    return low_res, tf_matrices
 
 
 def normalize(im, new_min, new_max):
@@ -116,26 +93,3 @@ def normalize(im, new_min, new_max):
 
     """
     return (im-im.min()) * (new_max - new_min) / (im.max() - im.min()) + new_min
-
-
-def generate_2d_gaussian(size, diameter):
-    """ Generate a 2d Gaussian to represent the PSF for testing purposes
-
-    Parameters
-    ----------
-    size: int
-        The size of the image i.e size=5 => 5x5 image
-    diameter: int
-        The diameter of the 2 dimensional gaussian in the center of the image
-
-    Returns
-    -------
-    An image with a 2d gaussian placed in the center
-    """
-
-    x = np.arange(0, size, 1, float)
-    y = x[:, np.newaxis]
-
-    x0 = y0 = (size - 1) // 2
-
-    return np.exp(-4 * np.log(2) * ((x - x0) ** 2 + (y - y0) ** 2) / diameter ** 2) * 1
